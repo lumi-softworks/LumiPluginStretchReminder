@@ -91,6 +91,8 @@ class StretchReminderManager: NSObject, SuperLog {
         self.isActive = true
         environment.saveActiveState(true, forKey: activeStateKey)
         self.startTime = environment.now()
+        // iOS 后台到点提醒只能靠本地通知，首次开启时请求授权。
+        environment.requestNotificationAuthorization()
         scheduleNextBreak()
     }
 
@@ -103,11 +105,11 @@ class StretchReminderManager: NSObject, SuperLog {
         guard isActive else { return }
         environment.cancel(timer)
         timer = nil
+        environment.cancelNotification(kind: .stretch)
         isActive = false
         environment.saveActiveState(false, forKey: activeStateKey)
         nextBreakTime = nil
         startTime = nil
-        // UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
 
     func snooze(minutes: Int) {
@@ -165,15 +167,26 @@ class StretchReminderManager: NSObject, SuperLog {
     }
 
     private func scheduleNextBreak() {
-        scheduleBreak(in: selectedInterval)
+        scheduleBreak(in: selectedInterval, repeats: true)
     }
 
-    private func scheduleBreak(in interval: TimeInterval) {
+    private func scheduleBreak(in interval: TimeInterval, repeats: Bool = false) {
         environment.cancel(timer)
         nextBreakTime = environment.now().addingTimeInterval(interval)
         timer = environment.schedule(after: interval) { [weak self] in
             self?.fireBreakReminder()
         }
+        environment.scheduleNotification(
+            kind: .stretch,
+            after: interval,
+            repeats: repeats,
+            title: String(localized: "Stretch", table: "StretchReminder", bundle: .module),
+            body: String(
+                localized: "Time to stand up and stretch your body.",
+                table: "StretchReminder",
+                bundle: .module
+            )
+        )
     }
 
     private func fireBreakReminder() {
