@@ -32,11 +32,11 @@ struct StretchSettingsView: View {
                             }
                         }
                         if option != manager.availableIntervals.last {
-                            Divider().padding(.vertical, 8)
+                            rowDivider
                         }
                     }
 
-                    Divider().padding(.vertical, 8)
+                    rowDivider
 
                     AppSettingRow(
                         title: String(localized: "Add Custom (minutes):", table: "StretchReminder", bundle: .module),
@@ -47,6 +47,9 @@ struct StretchSettingsView: View {
                             TextField("", value: $customMinutes, format: .number)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 64)
+                                #if os(iOS)
+                                .keyboardType(.numberPad)
+                                #endif
                                 .accessibilityIdentifier("\(configuration.accessibilityIdentifierPrefix).custom-interval.minutes")
                                 .onSubmit { addCustomInterval() }
                             AppButton(systemImage: "plus", style: .secondary, action: addCustomInterval)
@@ -55,7 +58,7 @@ struct StretchSettingsView: View {
                         }
                     }
 
-                    Divider().padding(.vertical, 8)
+                    rowDivider
 
                     AppSettingRow(
                         title: String(localized: "Reset to Default Intervals", table: "StretchReminder", bundle: .module),
@@ -83,6 +86,15 @@ struct StretchSettingsView: View {
         guard customMinutes > 0 else { return }
         manager.addCustomInterval(minutes: customMinutes)
         customMinutes = 60 // Reset to default suggestion
+    }
+
+    /// iOS 的卡片行自带发丝分隔线；macOS 的分组卡片需要显式分隔线。
+    @ViewBuilder
+    private var rowDivider: some View {
+        #if os(macOS)
+        Divider()
+            .padding(.vertical, 8)
+        #endif
     }
 }
 
